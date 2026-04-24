@@ -1,4 +1,4 @@
-import { delay } from "./apiClient";
+import { delay } from "./api/apiClient";
 import { videos, channels } from "./mockData";
 import type { Video, Channel } from "@/types";
 

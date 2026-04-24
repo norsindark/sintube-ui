@@ -1,57 +1,209 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useNavigate, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import { authService } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
+import { tokenManager } from "@/lib/auth/tokenManager";
 
-const schema = z.object({
-  email: z.string().email("Enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-type Values = z.infer<typeof schema>;
+import {
+  identifySchema,
+  verifySchema,
+  type IdentifyFormValues,
+  type VerifyFormValues,
+} from "@/types/auth/authSchema";
 
 export default function LoginForm() {
-  const setUser = useAuthStore((s) => s.setUser);
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const {
-    register, handleSubmit, formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
 
-  async function onSubmit(values: Values) {
-    setSubmitting(true);
-    const user = await authService.login(values.email, values.password);
-    setUser(user);
-    setSubmitting(false);
+  const identifyData = useAuthStore((s) => s.identifyData);
+  const setIdentifyData = useAuthStore((s) => s.setIdentifyData);
+
+  const {
+    register: registerIdentify,
+    handleSubmit: handleSubmitIdentify,
+    control: controlIdentify,
+    reset: resetIdentifyForm,
+    formState: { errors: errorsIdentify },
+  } = useForm<IdentifyFormValues>({
+    resolver: zodResolver(identifySchema),
+    defaultValues: {
+      identifier: "",
+    },
+  });
+
+  const identifier = useWatch({
+    control: controlIdentify,
+    name: "identifier",
+  });
+
+  const canContinue = (identifier ?? "").trim().length >= 3;
+
+  const {
+    register: registerVerify,
+    handleSubmit: handleSubmitVerify,
+    reset: resetVerifyForm,
+    formState: { errors: errorsVerify },
+  } = useForm<VerifyFormValues>({
+    resolver: zodResolver(verifySchema),
+    defaultValues: {
+      password: "",
+    },
+  });
+
+  useEffect(() => {
+    if (window.location.pathname === "/login") {
+      useAuthStore.getState().logout();
+
+      resetIdentifyForm({ identifier: "" });
+      resetVerifyForm({ password: "" });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!identifyData) {
+      resetIdentifyForm({ identifier: "" });
+      resetVerifyForm({ password: "" });
+    } else {
+      resetIdentifyForm({
+        identifier: identifyData.userInfo.username || "",
+      });
+    }
+  }, [identifyData]);
+
+  function resetIdentifyFlow() {
+    setIdentifyData(null);
+  }
+
+  async function handleIdentify(values: IdentifyFormValues) {
+    const res = await authService.identify({
+      identifier: values.identifier,
+    });
+
+    tokenManager.setPasswordVerificationToken(
+      res.passwordVerificationToken
+    );
+
+    setIdentifyData(res);
+  }
+
+  async function handleVerify(values: VerifyFormValues) {
+    if (!identifyData) return;
+
+    const res = await authService.verifyPassword({
+      userId: identifyData.userInfo.id,
+      password: values.password,
+    });
+
+    tokenManager.setAccessToken(res.accessToken);
+
+    if (res.refreshToken) {
+      tokenManager.setRefreshToken(res.refreshToken);
+    }
+
+    useAuthStore.getState().setUser(res.user);
     navigate("/");
   }
 
+  async function onSubmitIdentify(values: IdentifyFormValues) {
+    setSubmitting(true);
+    try {
+      await handleIdentify(values);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function onSubmitVerify(values: VerifyFormValues) {
+    setSubmitting(true);
+    try {
+      await handleVerify(values);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="email" {...register("email")} className="rounded-md" />
-        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
-        <Input id="password" type="password" autoComplete="current-password" {...register("password")} className="rounded-md" />
-        {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-      </div>
-      <Button type="submit" disabled={submitting} className="w-full rounded-full">
-        {submitting ? "Signing in..." : "Sign in"}
-      </Button>
+    <div className="space-y-4">
+      <form
+        onSubmit={
+          identifyData
+            ? handleSubmitVerify(onSubmitVerify)
+            : handleSubmitIdentify(onSubmitIdentify)
+        }
+        className="space-y-4"
+      >
+        <div className="space-y-1.5">
+          <Label>Username / Email</Label>
+          <Input
+            {...registerIdentify("identifier")}
+            disabled={!!identifyData}
+            className="rounded-md"
+          />
+          {errorsIdentify.identifier && !identifyData && (
+            <p className="text-xs text-destructive">
+              {errorsIdentify.identifier.message}
+            </p>
+          )}
+        </div>
+
+        {identifyData && (
+          <div className="space-y-1.5">
+            <Label>Password</Label>
+            <Input
+              type="password"
+              autoComplete="current-password"
+              {...registerVerify("password")}
+              className="rounded-md"
+            />
+            {errorsVerify.password && (
+              <p className="text-xs text-destructive">
+                {errorsVerify.password.message}
+              </p>
+            )}
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          disabled={submitting || (!identifyData && !canContinue)}
+          className="w-full rounded-full"
+        >
+          {submitting
+            ? identifyData
+              ? "Signing in..."
+              : "Checking..."
+            : identifyData
+            ? "Sign in"
+            : "Continue"}
+        </Button>
+
+        {identifyData && (
+          <button
+            type="button"
+            onClick={resetIdentifyFlow}
+            className="text-sm text-muted-foreground underline w-full"
+          >
+            Change account
+          </button>
+        )}
+      </form>
+
       <p className="text-sm text-muted-foreground text-center">
         New here?{" "}
-        <Link to="/register" className="font-semibold text-foreground hover:underline">
+        <Link
+          to="/register"
+          className="font-semibold hover:underline"
+        >
           Create an account
         </Link>
       </p>
-    </form>
+    </div>
   );
 }
