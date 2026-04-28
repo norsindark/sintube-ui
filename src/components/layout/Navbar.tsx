@@ -82,14 +82,14 @@ export default function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatar} alt={user?.name} />
-                <AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() ?? "ME"}</AvatarFallback>
+                <AvatarImage src={user?.avatar} alt={user?.displayName} />
+                <AvatarFallback>{user?.displayName?.slice(0, 2).toUpperCase() ?? "ME"}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-md">
             <DropdownMenuLabel>
-              <div className="font-semibold truncate">{user?.name}</div>
+              <div className="font-semibold truncate">{user?.displayName}</div>
               <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

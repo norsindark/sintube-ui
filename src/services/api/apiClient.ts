@@ -25,13 +25,13 @@ apiClient.interceptors.request.use((config) => {
     const token = tokenManager.getPasswordVerificationToken();
 
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = token;
     }
   } else {
     const token = tokenManager.getAccessToken();
 
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = token;
     }
   }
 

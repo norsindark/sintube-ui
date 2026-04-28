@@ -13,7 +13,7 @@ import RelatedVideos from "@/features/video/RelatedVideos";
 import CommentList from "@/features/video/CommentList";
 import { videoService } from "@/services/videoService";
 import { formatViews, timeAgo } from "@/utils/format";
-import type { Video } from "@/types";
+import type { Video } from "@/types/media/video";
 
 export default function VideoDetail() {
   const { id } = useParams<{ id: string }>();
@@ -48,7 +48,10 @@ export default function VideoDetail() {
     <div className="px-4 sm:px-6 py-4">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 min-w-0">
-          <VideoPlayer poster={video.thumbnail} />
+          <VideoPlayer
+            src={video.hlsUrl}
+            poster={video.thumbnail}
+          />
           <h1 className="text-xl sm:text-2xl font-bold mt-4 leading-snug">{video.title}</h1>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">

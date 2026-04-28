@@ -1,4 +1,4 @@
-import type { Channel, Video, Comment, User } from "@/types";
+import type { Channel, VideoMock, Comment, User } from "@/types";
 
 const PALETTES = [
   ["#ef4444", "#fde68a"],
@@ -94,7 +94,7 @@ const videoSeeds: Array<{
   { title: "Ambient guitar loops for late summer evenings", category: "Music", duration: 2880, views: 1_540_000, days: 25, channelIdx: 0 },
 ];
 
-export const videos: Video[] = videoSeeds.map((v, i) => {
+export const videos: VideoMock[] = videoSeeds.map((v, i) => {
   const id = `v${i + 1}`;
   const channel = channels[v.channelIdx];
   const publishedAt = new Date(Date.now() - v.days * 86400000).toISOString();

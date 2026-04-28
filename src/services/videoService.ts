@@ -1,33 +1,177 @@
 import { apiClient, delay } from "./api/apiClient";
-import { videos } from "./mockData";
-import type { Video } from "@/types";
+import { videos as mockVideos } from "./mockData";
+import { apiRoutes } from "./api/apiRoute";
+import type { PageResponse } from "@/types/api/pageResponse";
+import type { Video } from "@/types/media/video";
+import type {
+  MultipartInitResponse,
+  MultipartUploadUrlResponse,
+  CompleteMultipartRequest,
+  VideoUploadResponse
+} from "@/types/media/upload";
+import { mapVideo } from "@/types/media/video";
 
-void apiClient;
+// =========================
+// TYPES UPLOAD (FRONTEND)
+// =========================
+
 
 export const videoService = {
+  // =========================
+  // LIST VIDEOS (REAL + fallback)
+  // =========================
   async getVideos(category?: string): Promise<Video[]> {
-    await delay(120);
-    if (!category || category === "All") return videos;
-    return videos.filter((v) => v.category === category);
+    try {
+      const res = await apiClient.get(apiRoutes.video.getVideos, {
+        params: { category },
+      });
+
+      return (res.data ?? []).map(mapVideo);
+    } catch (e) {
+      await delay(100);
+      if (!category || category === "All") return mockVideos as any;
+      return mockVideos.filter((v) => v.category === category) as any;
+    }
   },
-  async getVideoById(id: string): Promise<Video | undefined> {
-    await delay(120);
-    return videos.find((v) => v.id === id);
+
+  // =========================
+  // VIDEO DETAIL
+  // =========================
+  async getVideoById(id: string): Promise<Video> {
+    try {
+      const res = await apiClient.get(apiRoutes.video.getById(id));
+      return mapVideo(res.data);
+    } catch (e) {
+      await delay(100);
+      const mock = mockVideos.find((v) => v.id === id);
+      return mock as any;
+    }
   },
+
+  // =========================
+  // RELATED
+  // =========================
   async getRelated(id: string): Promise<Video[]> {
-    await delay(120);
-    const v = videos.find((x) => x.id === id);
-    if (!v) return videos.slice(0, 8);
-    return videos.filter((x) => x.id !== id && x.category === v.category).concat(
-      videos.filter((x) => x.id !== id && x.category !== v.category),
-    ).slice(0, 12);
+    try {
+      const res = await apiClient.get(apiRoutes.video.getRelated(id));
+      return (res.data ?? []).map(mapVideo);
+    } catch (e) {
+      await delay(100);
+      return mockVideos.slice(0, 6) as any;
+    }
   },
+
+  // =========================
+  // SEARCH
+  // =========================
   async search(query: string): Promise<Video[]> {
-    await delay(120);
-    const q = query.trim().toLowerCase();
-    if (!q) return videos;
-    return videos.filter(
-      (v) => v.title.toLowerCase().includes(q) || v.channel.name.toLowerCase().includes(q),
+    try {
+      const res = await apiClient.get(apiRoutes.video.search, {
+        params: { q: query },
+      });
+
+      return (res.data ?? []).map(mapVideo);
+    } catch (e) {
+      await delay(100);
+      return mockVideos.filter((v) =>
+        v.title.toLowerCase().includes(query.toLowerCase())
+      ) as any;
+    }
+  },
+
+  // =========================
+  // MY VIDEOS
+  // =========================
+  async getMyVideos(page = 0, size = 10): Promise<PageResponse<Video>> {
+    try {
+      const res = await apiClient.get(apiRoutes.video.myVideos, {
+        params: { page, size },
+      });
+
+      return {
+        ...res.data,
+        content: (res.data.content ?? []).map(mapVideo),
+      };
+    } catch (e) {
+      await delay(100);
+      return {
+        totalElements: 0,
+        totalPages: 0,
+        page,
+        size,
+        content: [],
+      };
+    }
+  },
+
+  // =========================
+  // BY USER
+  // =========================
+  async getVideosByUser(userId: string, page = 0, size = 10): Promise<Video[]> {
+    try {
+      const res = await apiClient.get(apiRoutes.video.byUser(userId), {
+        params: { page, size },
+      });
+
+      return (res.data.content ?? []).map(mapVideo);
+    } catch (e) {
+      await delay(100);
+      return mockVideos as any;
+    }
+  },
+
+  // =========================
+  // UPLOAD SINGLE FILE (simple upload)
+  // =========================
+  async uploadVideo(file: File, title?: string, description?: string): Promise<VideoUploadResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (title) formData.append("title", title);
+    if (description) formData.append("description", description);
+
+    const res = await apiClient.post(apiRoutes.video.upload, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    return res.data;
+  },
+
+  // =========================
+  // INIT MULTIPART UPLOAD
+  // =========================
+  async initMultipartUpload(fileName: string, contentType: string): Promise<MultipartInitResponse> {
+    const res = await apiClient.post(apiRoutes.video.multipart.init, null, {
+      params: { fileName, contentType },
+    });
+
+    return res.data;
+  },
+
+  // =========================
+  // GET PRESIGNED URL FOR PART
+  // =========================
+  async getUploadPartUrl(
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ): Promise<MultipartUploadUrlResponse> {
+    const res = await apiClient.get(apiRoutes.video.multipart.url, {
+      params: { key, uploadId, partNumber },
+    });
+
+    return res.data;
+  },
+
+  // =========================
+  // COMPLETE MULTIPART UPLOAD
+  // =========================
+  async completeMultipartUpload(payload: CompleteMultipartRequest): Promise<VideoUploadResponse> {
+    const res = await apiClient.post(
+      apiRoutes.video.multipart.complete,
+      payload
     );
+
+    return res.data;
   },
 };

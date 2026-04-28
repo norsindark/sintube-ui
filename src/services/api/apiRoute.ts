@@ -4,4 +4,22 @@ export const apiRoutes = {
     identify: "/public/users/identify",
     verifyPassword: "/users/verify-password",
   },
+
+  video: {
+    getVideos: "/public/videos",
+    getById: (id: string) => `/public/videos/${id}`,
+    getRelated: (id: string) => `/public/videos/${id}/related`,
+    search: "/public/videos/search",
+    myVideos: "/videos/me",
+    upload: "/videos/upload",
+    byUser: (userId: string) => `/public/videos/user/${userId}`,
+
+    multipart: {
+      init: "/videos/multipart/init",
+      url: "/videos/multipart/url",
+      complete: "/videos/multipart/complete",
+    },
+  },
+
+  
 };

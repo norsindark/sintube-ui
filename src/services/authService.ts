@@ -23,9 +23,7 @@ export const authService = {
     return data;
   },
 
-  async verifyPassword(
-    payload: VerifyPasswordRequest
-  ): Promise<LoginResponse> {
+  async verifyPassword(payload: VerifyPasswordRequest) {
     const { data } = await apiClient.post<LoginResponse>(
       apiRoutes.auth.verifyPassword,
       payload,

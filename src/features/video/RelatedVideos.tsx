@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { formatDuration, formatViews, timeAgo } from "@/utils/format";
-import type { Video } from "@/types";
+import type { VideoMock } from "@/types";
 
-export default function RelatedVideos({ videos }: { videos: Video[] }) {
+export default function RelatedVideos({ videos }: { videos: VideoMock[] }) {
   return (
     <div className="space-y-3">
       {videos.map((v) => (

@@ -21,7 +21,7 @@ export default function CommentList({ comments }: { comments: Comment[] }) {
         text: draft.trim(),
         publishedAt: new Date().toISOString(),
         likes: 0,
-        user: { id: user.id, name: user.name, avatar: user.avatar },
+        user: { id: user.id, name: user.displayName, avatar: user.avatar },
       },
       ...items,
     ]);
@@ -34,7 +34,7 @@ export default function CommentList({ comments }: { comments: Comment[] }) {
       <form onSubmit={submit} className="flex gap-3 mb-8">
         <Avatar className="h-9 w-9 shrink-0">
           <AvatarImage src={user?.avatar} />
-          <AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() ?? "ME"}</AvatarFallback>
+          <AvatarFallback>{user?.displayName?.slice(0, 2).toUpperCase() ?? "ME"}</AvatarFallback>
         </Avatar>
         <div className="flex-1 flex gap-2">
           <Input

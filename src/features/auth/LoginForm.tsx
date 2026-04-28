@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { authService } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
 import { tokenManager } from "@/lib/auth/tokenManager";
+import { mapUser } from "@/types/auth/mapUser";
 
 import {
   identifySchema,
@@ -107,7 +108,10 @@ export default function LoginForm() {
       tokenManager.setRefreshToken(res.refreshToken);
     }
 
-    useAuthStore.getState().setUser(res.user);
+    const user = mapUser(res.userInfo);
+
+    useAuthStore.getState().setUser(user);
+
     navigate("/");
   }
 
@@ -180,8 +184,8 @@ export default function LoginForm() {
               ? "Signing in..."
               : "Checking..."
             : identifyData
-            ? "Sign in"
-            : "Continue"}
+              ? "Sign in"
+              : "Continue"}
         </Button>
 
         {identifyData && (

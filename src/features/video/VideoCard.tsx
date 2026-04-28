@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { CheckCircle2 } from "lucide-react";
 import { formatDuration, formatViews, timeAgo } from "@/utils/format";
-import type { Video } from "@/types";
+import type { VideoMock } from "@/types";
 
-export default function VideoCard({ video }: { video: Video }) {
+export default function VideoCard({ video }: { video: VideoMock }) {
   return (
     <Link to={`/video/${video.id}`} className="group flex flex-col gap-3">
       <div className="relative aspect-video overflow-hidden rounded-xl bg-muted">

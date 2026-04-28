@@ -1,3 +1,5 @@
+export * from "./api/pageResponse";
+
 export interface User {
   id: string;
   name: string;
@@ -16,7 +18,7 @@ export interface Channel {
   verified: boolean;
 }
 
-export interface Video {
+export interface VideoMock {
   id: string;
   title: string;
   thumbnail: string;
