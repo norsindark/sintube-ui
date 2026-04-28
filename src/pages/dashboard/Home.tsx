@@ -5,11 +5,11 @@ import { videoService } from "@/services/videoService";
 import { CATEGORIES } from "@/services/mockData";
 import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
-import type { Video } from "@/types";
+import type { VideoMock } from "@/types";
 
 export default function Home() {
   const [active, setActive] = useState("All");
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [videos, setVideos] = useState<VideoMock[]>([]);
   const [loading, setLoading] = useState(true);
   const searchQuery = useUIStore((s) => s.searchQuery);
 

@@ -4,7 +4,7 @@ import ProfileHeader from "@/features/user/ProfileHeader";
 import VideoGrid from "@/features/video/VideoGrid";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
-import type { Video } from "@/types";
+import type { Video } from "@/types/media/video";
 
 export default function Profile() {
   const user = useAuthStore((s) => s.user);
@@ -12,11 +12,14 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user) return;
-    userService.getUserVideos(user.id).then(setVideos);
+
+    userService.getMyVideos().then((data) => {
+      setVideos(data);
+    });
   }, [user]);
 
   if (!user) return null;
-
+  
   return (
     <div className="px-4 sm:px-6 py-6 max-w-6xl mx-auto">
       <ProfileHeader user={user} />
@@ -40,7 +43,7 @@ export default function Profile() {
           </TabsContent>
           <TabsContent value="about" className="mt-6 max-w-2xl">
             <p className="text-sm leading-relaxed">
-              {user.name} ({user.handle}) joined YouTube Mini on{" "}
+              {user.displayName} ({user.handle}) joined YouTube Mini on{" "}
               {new Date(user.joinedAt).toLocaleDateString()}. This is a UI-only demo profile.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 text-sm">

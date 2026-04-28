@@ -38,8 +38,20 @@ export interface VerifyPasswordRequest {
   password: string;
 }
 
+export interface UserInfoResponse {
+  username: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  isVerified: boolean;
+  isAdmin: boolean;
+  verified: boolean;
+  active: boolean;
+}
+
 export interface LoginResponse {
-  user: User;
+  status: AuthFlowStatus;
   accessToken: string;
   refreshToken?: string;
+  userInfo: UserInfoResponse;
 }

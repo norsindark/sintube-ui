@@ -3,13 +3,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "@/components/layout/Layout";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import Home from "@/pages/Home";
-import VideoDetail from "@/pages/VideoDetail";
-import Profile from "@/pages/Profile";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import Home from "@/pages/dashboard/Home";
+import VideoDetail from "@/pages/video/VideoDetail";
+import Profile from "@/pages/user/Profile";
 import NotFound from "@/pages/NotFound";
 import { useAuthStore } from "@/store/authStore";
+import { UploadPage } from "@/pages/video/UploadPage";
 
 function PublicOnly({ children }: { children: React.ReactNode }) {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
@@ -29,6 +30,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/video/:id" element={<VideoDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/upload" element={<UploadPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
