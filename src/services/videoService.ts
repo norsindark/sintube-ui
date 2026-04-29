@@ -21,6 +21,9 @@ export const videoService = {
   // LIST VIDEOS (REAL + fallback)
   // =========================
   async getVideos(category?: string): Promise<Video[]> {
+    if (!category || category === "All") return mockVideos as any;
+    return mockVideos.filter((v) => v.category === category) as any;
+
     try {
       const res = await apiClient.get(apiRoutes.video.getVideos, {
         params: { category },
@@ -52,6 +55,8 @@ export const videoService = {
   // RELATED
   // =========================
   async getRelated(id: string): Promise<Video[]> {
+    return mockVideos.slice(0, 6) as any;
+
     try {
       const res = await apiClient.get(apiRoutes.video.getRelated(id));
       return (res.data ?? []).map(mapVideo);
@@ -173,5 +178,14 @@ export const videoService = {
     );
 
     return res.data;
+  },
+
+  // =========================
+  // ABORT MULTIPART UPLOAD
+  // =========================
+  async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+    await apiClient.delete(apiRoutes.video.multipart.abort, {
+      params: { key, uploadId },
+    });
   },
 };
