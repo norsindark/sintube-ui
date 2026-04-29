@@ -18,6 +18,7 @@ export const apiRoutes = {
       init: "/videos/multipart/init",
       url: "/videos/multipart/url",
       complete: "/videos/multipart/complete",
+      abort: "/videos/multipart/abort"
     },
   },
 

@@ -1,9 +1,11 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { videoService } from "@/services/videoService";
 import type { VideoUploadResponse } from "@/types/media/upload";
 
-export const SIMPLE_UPLOAD_THRESHOLD = 1000 * 1024 * 1024; // 10MB
-export const MULTIPART_CHUNK_SIZE = 5000 * 1024 * 1024; // 5MB
+export const SIMPLE_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
+export const MULTIPART_CHUNK_SIZE = 5 * 1024 * 1024;
+const MAX_PARALLEL = 4;
+const MAX_RETRY = 3;
 
 export interface MultipartUploadOptions {
   file: File;
@@ -11,6 +13,13 @@ export interface MultipartUploadOptions {
   description?: string;
   chunkSize?: number;
   onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
+
+  onInit?: (key: string, uploadId: string) => void;
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export async function uploadInMultipart({
@@ -19,19 +28,19 @@ export async function uploadInMultipart({
   description,
   chunkSize = MULTIPART_CHUNK_SIZE,
   onProgress,
+  signal,
+  onInit,
 }: MultipartUploadOptions): Promise<VideoUploadResponse> {
   const totalParts = Math.ceil(file.size / chunkSize);
 
   const { key, uploadId } = await videoService.initMultipartUpload(
     file.name,
-    file.type || "application/octet-stream",
+    file.type || "application/octet-stream"
   );
 
-  const completedParts: {
-    partNumber: number;
-    etag: string;
-  }[] = [];
+  onInit?.(key, uploadId);
 
+  const completedParts: { partNumber: number; etag: string }[] = [];
   const partProgress = new Array<number>(totalParts).fill(0);
 
   const reportProgress = () => {
@@ -41,53 +50,106 @@ export async function uploadInMultipart({
     onProgress(percent);
   };
 
-  for (let i = 0; i < totalParts; i++) {
-    const partNumber = i + 1;
-    const start = i * chunkSize;
+  let aborted = false;
+
+  const uploadPart = async (index: number) => {
+    const partNumber = index + 1;
+    const start = index * chunkSize;
     const end = Math.min(start + chunkSize, file.size);
     const blob = file.slice(start, end);
 
     const { url } = await videoService.getUploadPartUrl(
       key,
       uploadId,
-      partNumber,
+      partNumber
     );
 
-    const putRes = await axios.put(url, blob, {
-      headers: {
-        "Content-Type": file.type || "application/octet-stream",
-      },
-      onUploadProgress: (e) => {
-        partProgress[i] = e.loaded;
+    let attempt = 0;
+
+    while (attempt < MAX_RETRY) {
+      try {
+        const res = await axios.put(url, blob, {
+          signal,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
+          onUploadProgress: (e) => {
+            partProgress[index] = e.loaded;
+            reportProgress();
+          },
+        });
+
+        const eTag =
+          res.headers["etag"] ||
+          res.headers["ETag"] ||
+          res.headers["Etag"] ||
+          "";
+
+        completedParts.push({
+          partNumber,
+          etag: eTag.replace(/"/g, ""),
+        });
+
+        partProgress[index] = blob.size;
         reportProgress();
-      },
+        return;
+      } catch (err) {
+        if (signal?.aborted) {
+          aborted = true;
+          throw err;
+        }
+
+        attempt++;
+        if (attempt >= MAX_RETRY) throw err;
+
+        await sleep(500 * attempt);
+      }
+    }
+  };
+
+  try {
+    const queue = [...Array(totalParts).keys()];
+    const workers: Promise<void>[] = [];
+
+    for (let i = 0; i < MAX_PARALLEL; i++) {
+      workers.push(
+        (async () => {
+          while (queue.length && !aborted) {
+            const index = queue.shift();
+            if (index === undefined) return;
+            await uploadPart(index);
+          }
+        })()
+      );
+    }
+
+    await Promise.all(workers);
+
+    return await videoService.completeMultipartUpload({
+      key,
+      uploadId,
+      fileName: file.name,
+      title,
+      description,
+      size: file.size,
+      contentType: file.type || "application/octet-stream",
+      parts: completedParts.sort((a, b) => a.partNumber - b.partNumber),
     });
+  } catch (err) {
+    try {
+      await videoService.abortMultipartUpload(key, uploadId);
+    } catch {}
 
-    const eTag =
-      putRes.headers["etag"] ||
-      putRes.headers["ETag"] ||
-      putRes.headers["Etag"] ||
-      "";
+    if (signal?.aborted) {
+      throw new Error("Upload cancelled");
+    }
 
-    completedParts.push({
-      partNumber,
-      etag: eTag.replace(/"/g, ""),
-    });
+    if (err instanceof AxiosError) {
+      throw new Error(err.message);
+    }
 
-    partProgress[i] = blob.size;
-    reportProgress();
+    throw err;
   }
-
-  return videoService.completeMultipartUpload({
-    key,
-    uploadId,
-    fileName: file.name,
-    title,
-    description,
-    size: file.size,
-    contentType: file.type || "application/octet-stream",
-    parts: completedParts,
-  });
 }
 
 export function formatBytes(bytes: number): string {

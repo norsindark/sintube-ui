@@ -5,10 +5,12 @@ import VideoGrid from "@/features/video/VideoGrid";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
 import type { Video } from "@/types/media/video";
+import { UploadPage } from "@/pages/video/UploadPage";
 
 export default function Profile() {
   const user = useAuthStore((s) => s.user);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [openUpload, setOpenUpload] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -19,10 +21,11 @@ export default function Profile() {
   }, [user]);
 
   if (!user) return null;
-  
+
   return (
     <div className="px-4 sm:px-6 py-6 max-w-6xl mx-auto">
-      <ProfileHeader user={user} />
+      <ProfileHeader user={user} onUploadClick={() => setOpenUpload(true)} />
+      <UploadPage open={openUpload} onOpenChange={setOpenUpload} />
       <div className="mt-8">
         <Tabs defaultValue="videos" className="w-full">
           <TabsList className="rounded-md">

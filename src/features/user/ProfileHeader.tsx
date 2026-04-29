@@ -2,10 +2,14 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatViews } from "@/utils/format";
 import type { User } from "@/types/user/user";
-import { useNavigate } from "react-router-dom";
 
-export default function ProfileHeader({ user }: { user: User }) {
-  const navigate = useNavigate();
+export default function ProfileHeader({
+  user,
+  onUploadClick,
+}: {
+  user: User;
+  onUploadClick: () => void;
+}) {
   const joined = new Date(user.joinedAt);
   return (
     <div>
@@ -27,9 +31,7 @@ export default function ProfileHeader({ user }: { user: User }) {
         <div className="flex gap-2">
           <Button variant="secondary" className="rounded-full">Customize channel</Button>
           <Button className="rounded-full">Manage videos</Button>
-          <Button className="rounded-full" onClick={() => navigate("/upload")}>
-            Upload video
-          </Button>
+          <Button className="rounded-full" onClick={onUploadClick}> Upload video</Button>
         </div>
       </div>
     </div>
