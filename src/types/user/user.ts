@@ -24,3 +24,13 @@ export interface UserInfoResponse {
   verified: boolean;
   active: boolean;
 }
+
+export interface UserLiteInfoResponse {
+  username: string;
+  email: string;
+  displayName: string;
+  avatar: boolean;
+  isActive: boolean;
+  isVerified: boolean;
+  isAdmin: boolean;
+}

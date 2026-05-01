@@ -27,3 +27,8 @@ export interface VideoUploadResponse {
   videoId: string;
   status: UploadProcess;
 }
+
+export interface AbortUploadVideoRequest {
+  key: string;
+  uploadId: string;
+}

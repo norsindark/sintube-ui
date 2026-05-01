@@ -1,6 +1,6 @@
-import axios, { AxiosError } from "axios";
 import { videoService } from "@/services/videoService";
-import type { VideoUploadResponse } from "@/types/media/upload";
+import type { AbortUploadVideoRequest, VideoUploadResponse } from "@/types/media/upload";
+import axios, { AxiosError } from "axios";
 
 export const SIMPLE_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
 export const MULTIPART_CHUNK_SIZE = 5 * 1024 * 1024;
@@ -137,8 +137,14 @@ export async function uploadInMultipart({
     });
   } catch (err) {
     try {
-      await videoService.abortMultipartUpload(key, uploadId);
-    } catch {}
+
+      const request: AbortUploadVideoRequest = {
+        key,
+        uploadId,
+      };
+    
+      await videoService.abortMultipartUpload(request);
+    } catch { }
 
     if (signal?.aborted) {
       throw new Error("Upload cancelled");
