@@ -1,4 +1,8 @@
 export const apiRoutes = {
+  user: {
+    getProfile: "/users/profile",
+  },
+
   auth: {
     register: "/public/register",
     identify: "/public/users/identify",

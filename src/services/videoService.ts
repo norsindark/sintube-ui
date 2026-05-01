@@ -7,7 +7,8 @@ import type {
   MultipartInitResponse,
   MultipartUploadUrlResponse,
   CompleteMultipartRequest,
-  VideoUploadResponse
+  VideoUploadResponse,
+  AbortUploadVideoRequest
 } from "@/types/media/upload";
 import { mapVideo } from "@/types/media/video";
 
@@ -183,9 +184,9 @@ export const videoService = {
   // =========================
   // ABORT MULTIPART UPLOAD
   // =========================
-  async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+  async abortMultipartUpload(payload: AbortUploadVideoRequest): Promise<void> {
     await apiClient.delete(apiRoutes.video.multipart.abort, {
-      params: { key, uploadId },
+      params: { payload },
     });
   },
 };

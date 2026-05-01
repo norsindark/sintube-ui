@@ -1,17 +1,19 @@
-import { useRef, useState, type ChangeEvent, type FormEvent, useEffect } from "react";
-import { Upload, FileVideo, X, CheckCircle2 } from "lucide-react";
-import { videoService } from "@/services/videoService";
-import {
-  formatBytes,
-  SIMPLE_UPLOAD_THRESHOLD,
-  uploadInMultipart,
-} from "@/utils/upload";
-import type { VideoUploadResponse } from "@/types/media/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useVideoProgress } from "@/hooks/useVideoProgress";
+import { videoService } from "@/services/videoService";
+import type { VideoUploadResponse } from "@/types/media/upload";
+import {
+  formatBytes,
+  SIMPLE_UPLOAD_THRESHOLD,
+  uploadInMultipart,
+} from "@/utils/upload";
+import { CheckCircle2, FileVideo, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+
+import type { AbortUploadVideoRequest } from "@/types/media/upload";
 
 import {
   Dialog,
@@ -41,9 +43,10 @@ export function UploadPage({
   const [result, setResult] = useState<VideoUploadResponse | null>(null);
 
   const [mode, setMode] = useState<"simple" | "multipart" | null>(null);
-  const [videoId, setVideoId] = useState<string | null>(null);
+  const [videoId, setVideoId] = useState<string | null>("");
 
   const abortRef = useRef<AbortController | null>(null);
+
   const uploadMetaRef = useRef<{ key: string; uploadId: string } | null>(null);
 
   const { progress: wsProgress, status: wsStatus } =
@@ -102,7 +105,11 @@ export function UploadPage({
     const meta = uploadMetaRef.current;
     if (meta) {
       try {
-        await videoService.abortMultipartUpload(meta.key, meta.uploadId);
+        const request: AbortUploadVideoRequest = {
+          key: meta.key,
+          uploadId: meta.uploadId,
+        };
+        await videoService.abortMultipartUpload(request);
       } catch { }
     }
 
@@ -176,7 +183,11 @@ export function UploadPage({
     const meta = uploadMetaRef.current;
     if (meta) {
       try {
-        await videoService.abortMultipartUpload(meta.key, meta.uploadId);
+        const request: AbortUploadVideoRequest = {
+          key: meta.key,
+          uploadId: meta.uploadId,
+        };
+        await videoService.abortMultipartUpload(request);
       } catch { }
     }
 
@@ -302,7 +313,6 @@ export function UploadPage({
               </div>
             )}
 
-            {/* ✅ FIX BUTTON UI */}
             <div className="flex gap-2">
               {!isUploading && (
                 <Button type="submit" disabled={!file}>

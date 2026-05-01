@@ -7,12 +7,13 @@ import type { IdentifyResponse } from "@/types/auth/auth";
 interface AuthState {
   isLoggedIn: boolean;
   user: User | null;
-
   identifyData: IdentifyResponse | null;
 
+  hasHydrated: boolean;
+
+  setHasHydrated: (state: boolean) => void;
   setIdentifyData: (data: IdentifyResponse | null) => void;
   setUser: (user: User) => void;
-
   logout: () => void;
 }
 
@@ -23,8 +24,11 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       identifyData: null,
 
-      setIdentifyData: (data) =>
-        set({ identifyData: data }),
+      hasHydrated: false,
+
+      setHasHydrated: (state) => set({ hasHydrated: state }),
+
+      setIdentifyData: (data) => set({ identifyData: data }),
 
       setUser: (user) =>
         set({
@@ -46,6 +50,10 @@ export const useAuthStore = create<AuthState>()(
         isLoggedIn: state.isLoggedIn,
         user: state.user,
       }),
+
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
