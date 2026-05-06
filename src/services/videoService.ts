@@ -1,16 +1,16 @@
-import { apiClient, delay } from "./api/apiClient";
-import { videos as mockVideos } from "./mockData";
-import { apiRoutes } from "./api/apiRoute";
 import type { PageResponse } from "@/types/api/pageResponse";
-import type { Video } from "@/types/media/video";
 import type {
+  AbortUploadVideoRequest,
+  CompleteMultipartRequest,
   MultipartInitResponse,
   MultipartUploadUrlResponse,
-  CompleteMultipartRequest,
-  VideoUploadResponse,
-  AbortUploadVideoRequest
+  VideoUploadResponse
 } from "@/types/media/upload";
+import type { Video } from "@/types/media/video";
 import { mapVideo } from "@/types/media/video";
+import { apiClient, delay } from "./api/apiClient";
+import { apiRoutes } from "./api/apiRoute";
+import { videos as mockVideos } from "./mockData";
 
 // =========================
 // TYPES UPLOAD (FRONTEND)
@@ -21,20 +21,28 @@ export const videoService = {
   // =========================
   // LIST VIDEOS (REAL + fallback)
   // =========================
-  async getVideos(category?: string): Promise<Video[]> {
-    if (!category || category === "All") return mockVideos as any;
-    return mockVideos.filter((v) => v.category === category) as any;
-
+  async getFeed(cursor?: string): Promise<{ data: Video[]; nextCursor?: string; }> {
     try {
-      const res = await apiClient.get(apiRoutes.video.getVideos, {
-        params: { category },
+      const res = await apiClient.get(apiRoutes.video.getFeed, {
+        params: {
+          cursor,
+          size: 10,
+        },
       });
 
-      return (res.data ?? []).map(mapVideo);
+      const page = res.data;
+
+      return {
+        data: (page?.content ?? []).map(mapVideo),
+        nextCursor: page?.nextCursor,
+      };
     } catch (e) {
       await delay(100);
-      if (!category || category === "All") return mockVideos as any;
-      return mockVideos.filter((v) => v.category === category) as any;
+
+      return {
+        data: mockVideos as any,
+        nextCursor: undefined,
+      };
     }
   },
 
@@ -70,18 +78,24 @@ export const videoService = {
   // =========================
   // SEARCH
   // =========================
-  async search(query: string): Promise<Video[]> {
+  async search(query: string): Promise<{ data: Video[]; nextCursor?: string }> {
     try {
       const res = await apiClient.get(apiRoutes.video.search, {
         params: { q: query },
       });
 
-      return (res.data ?? []).map(mapVideo);
+      return {
+        data: (res.data ?? []).map(mapVideo),
+        nextCursor: undefined,
+      };
     } catch (e) {
       await delay(100);
-      return mockVideos.filter((v) =>
-        v.title.toLowerCase().includes(query.toLowerCase())
-      ) as any;
+      return {
+        data: mockVideos.filter((v) =>
+          v.title.toLowerCase().includes(query.toLowerCase())
+        ) as any,
+        nextCursor: undefined,
+      };
     }
   },
 
