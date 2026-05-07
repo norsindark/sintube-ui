@@ -1,33 +1,85 @@
-import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import VideoGrid from "@/features/video/VideoGrid";
-import { videoService } from "@/services/videoService";
-import { CATEGORIES } from "@/services/mockData";
-import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
-import type { VideoMock } from "@/types";
+import { CATEGORIES } from "@/services/mockData";
+import { videoService } from "@/services/videoService";
+import { useUIStore } from "@/store/uiStore";
+import { Video } from "@/types/media/video";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function Home() {
   const [active, setActive] = useState("All");
-  const [videos, setVideos] = useState<VideoMock[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [hasMore, setHasMore] = useState(true);
+
+  const loaderRef = useRef<HTMLDivElement | null>(null);
   const searchQuery = useUIStore((s) => s.searchQuery);
 
+  // RESET khi đổi category hoặc search
+  useEffect(() => {
+    setVideos([]);
+    setCursor(undefined);
+    setHasMore(true);
+  }, [active, searchQuery]);
+
+  // LOAD DATA
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+
     const load = async () => {
-      const data = searchQuery
-        ? await videoService.search(searchQuery)
-        : await videoService.getVideos(active);
-      if (!cancelled) {
-        setVideos(data);
-        setLoading(false);
+      if (!hasMore) return;
+
+      setLoading(true);
+
+      try {
+        const res = searchQuery
+          ? await videoService.search(searchQuery)
+          : await videoService.getFeed(cursor);
+
+        if (cancelled) return;
+
+        setVideos((prev) => [...prev, ...res.data]);
+
+        if (searchQuery) {
+          setHasMore(false); // search chỉ load 1 lần
+        } else {
+          setCursor(res.nextCursor);
+          setHasMore(!!res.nextCursor);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
+
     load();
-    return () => { cancelled = true; };
-  }, [active, searchQuery]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cursor, searchQuery]);
+
+  // INTERSECTION OBSERVER
+  useEffect(() => {
+    if (!loaderRef.current || !hasMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          // trigger load next bằng cách set cursor mới
+          setCursor((prev) => prev ?? "__init__");
+        }
+      },
+      { threshold: 1 }
+    );
+
+    observer.observe(loaderRef.current);
+
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
 
   const heading = useMemo(() => {
     if (searchQuery) return `Results for "${searchQuery}"`;
@@ -36,6 +88,7 @@ export default function Home() {
 
   return (
     <div className="px-4 sm:px-6 py-4">
+      {/* CATEGORY UI */}
       <div className="sticky top-14 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-background/95 backdrop-blur border-b border-border mb-4">
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {CATEGORIES.map((c) => (
@@ -51,11 +104,25 @@ export default function Home() {
           ))}
         </div>
       </div>
+
       <h2 className="text-lg font-semibold mb-4">{heading}</h2>
-      {loading ? (
+
+      {videos.length === 0 && loading ? (
         <VideoGridSkeleton />
       ) : (
-        <VideoGrid videos={videos} />
+        <>
+          <VideoGrid videos={videos} />
+
+          {/* loader trigger */}
+          <div ref={loaderRef} className="h-12 flex items-center justify-center">
+            {loading && (
+              <span className="text-sm text-muted-foreground">Loading...</span>
+            )}
+            {!hasMore && (
+              <span className="text-xs text-muted-foreground">No more videos</span>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

@@ -10,7 +10,7 @@ export const apiRoutes = {
   },
 
   video: {
-    getVideos: "/public/videos",
+    getFeed: "/public/videos/feed",
     getById: (id: string) => `/public/videos/${id}`,
     getRelated: (id: string) => `/public/videos/${id}/related`,
     search: "/public/videos/search",
