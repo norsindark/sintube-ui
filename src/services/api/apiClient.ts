@@ -1,6 +1,6 @@
-import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { tokenManager } from "@/lib/auth/tokenManager";
+import axios from "axios";
 
 declare module "axios" {
   export interface AxiosRequestConfig {
@@ -41,7 +41,6 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error?.response?.status;
 
     const message =
       error?.response?.data?.message ||

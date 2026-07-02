@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  react:
+    container_name: sintube-ui
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: sintube-ui:latest
+    ports:
+      - "3001:3002"
+    restart: unless-stopped
