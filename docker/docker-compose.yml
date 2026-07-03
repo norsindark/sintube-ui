@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   react:
     container_name: sintube-ui
@@ -9,4 +7,9 @@ services:
     image: sintube-ui:latest
     ports:
       - "3001:3002"
-    restart: unless-stopped
+    networks:
+      - hls-network
+
+networks:
+  hls-network:
+    external: true
